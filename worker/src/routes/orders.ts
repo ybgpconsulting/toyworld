@@ -229,13 +229,33 @@ app.post('/', async (c) => {
 
 app.get('/:orderNumber', async (c) => {
   const orderNumber = c.req.param('orderNumber');
-  const order = await c.env.DB.prepare('SELECT * FROM orders WHERE order_number = ?').bind(orderNumber).first();
+  const order = await c.env.DB.prepare(
+    'SELECT id, order_number, grand_total, order_status, payment_status, shipping_status, created_at, whatsapp_link FROM orders WHERE order_number = ?'
+  )
+    .bind(orderNumber)
+    .first<{
+      id: number;
+      order_number: string;
+      grand_total: number;
+      order_status: string;
+      payment_status: string;
+      shipping_status: string;
+      created_at: string;
+      whatsapp_link: string | null;
+    }>();
+
   if (!order) return c.json({ error: 'Order not found' }, 404);
 
-  const { results: items } = await c.env.DB.prepare('SELECT * FROM order_items WHERE order_id = ?').bind(order.id).all();
-  const address = await c.env.DB.prepare('SELECT * FROM order_addresses WHERE order_id = ?').bind(order.id).first();
-
-  return c.json({ ...order, items, address });
+  return c.json({
+    id: order.id,
+    order_number: order.order_number,
+    grand_total: Number(order.grand_total),
+    order_status: order.order_status,
+    payment_status: order.payment_status,
+    shipping_status: order.shipping_status,
+    created_at: order.created_at,
+    whatsapp_link: order.whatsapp_link,
+  });
 });
 
 export default app;
