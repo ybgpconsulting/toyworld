@@ -5,6 +5,54 @@ import { verifyPassword, hashPassword } from '../../utils/helpers';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+app.post('/setup', async (c) => {
+  try {
+    const { username, password, email, name } = await c.req.json();
+
+    if (!username || !password) {
+      return c.json({ error: 'Username and password are required' }, 400);
+    }
+
+    if (String(password).length < 12) {
+      return c.json({ error: 'Password must be at least 12 characters long' }, 400);
+    }
+
+    const user = await c.env.DB.prepare(
+      'SELECT id, username, password_hash, email, name, role, active FROM admin_users WHERE username = ?'
+    )
+      .bind(username)
+      .first<{
+        id: number;
+        username: string;
+        password_hash: string;
+        email: string;
+        name: string | null;
+        role: string;
+        active: number;
+      }>();
+
+    if (!user) {
+      return c.json({ error: 'Admin user not found' }, 404);
+    }
+
+    if (user.password_hash !== 'SETUP_REQUIRED' && !user.password_hash.startsWith('TODO')) {
+      return c.json({ error: 'Admin password is already configured' }, 409);
+    }
+
+    const newHash = await hashPassword(String(password));
+    await c.env.DB.prepare(
+      'UPDATE admin_users SET password_hash = ?, email = COALESCE(?, email), name = COALESCE(?, name), active = 1 WHERE id = ?'
+    )
+      .bind(newHash, email || user.email, name || user.name, user.id)
+      .run();
+
+    return c.json({ success: true, message: 'Admin password configured successfully' });
+  } catch (err) {
+    console.error('Admin setup error:', err);
+    return c.json({ error: 'Admin setup failed' }, 500);
+  }
+});
+
 app.post('/login', async (c) => {
   try {
     const { username, password } = await c.req.json();
@@ -28,26 +76,11 @@ app.post('/login', async (c) => {
       return c.json({ error: 'Invalid credentials' }, 401);
     }
 
-    let isValid = false;
-
-    // Handle initial setup mode or standard password check
-    if (
-      user.password_hash === 'SETUP_REQUIRED' ||
-      user.password_hash.startsWith('TODO')
-    ) {
-      // Allow default password 'ToyWorld@2024' on first login and automatically hash it
-      if (password === 'ToyWorld@2024') {
-        isValid = true;
-        const newHash = await hashPassword(password);
-        await c.env.DB.prepare(
-          'UPDATE admin_users SET password_hash = ? WHERE id = ?'
-        )
-          .bind(newHash, user.id)
-          .run();
-      }
-    } else {
-      isValid = await verifyPassword(password, user.password_hash);
+    if (user.password_hash === 'SETUP_REQUIRED' || user.password_hash.startsWith('TODO')) {
+      return c.json({ error: 'Admin password has not been configured. Use /api/admin/auth/setup first.' }, 403);
     }
+
+    const isValid = await verifyPassword(password, user.password_hash);
 
     if (!isValid) {
       return c.json({ error: 'Invalid credentials' }, 401);

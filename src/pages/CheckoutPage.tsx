@@ -54,13 +54,13 @@ const CheckoutPage: React.FC = () => {
   const handlePlaceOrder = async () => {
     try {
       setLoading(true);
-      const shippingAmount = subtotal >= 999 ? 0 : 79;
-      const grandTotal = subtotal + shippingAmount;
 
       const orderPayload = {
+        idempotency_key: (globalThis.crypto && 'randomUUID' in globalThis.crypto ? globalThis.crypto.randomUUID() : `checkout-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`),
         customer_name: formData.fullName,
         customer_phone: formData.mobile,
         customer_email: formData.email || undefined,
+        customer_alternate_phone: undefined,
         items: items.map((i) => ({
           product_id: Number(i.productId || i.id),
           product_name: i.name,
@@ -79,9 +79,6 @@ const CheckoutPage: React.FC = () => {
           country: 'India',
         },
         subtotal,
-        shipping_amount: shippingAmount,
-        discount_amount: 0,
-        grand_total: grandTotal,
       };
 
       const response = await createOrder(orderPayload);
@@ -93,8 +90,6 @@ const CheckoutPage: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const shippingEstimate = subtotal >= 999 ? 0 : 79;
 
   return (
     <div className="bg-gray-50 min-h-screen py-8">
@@ -311,14 +306,12 @@ const CheckoutPage: React.FC = () => {
                   <span>₹{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Pan-India Shipping</span>
-                  <span>{shippingEstimate === 0 ? 'FREE' : `₹${shippingEstimate}`}</span>
+                  <span>Shipping</span>
+                  <span>Calculated by server</span>
                 </div>
                 <div className="border-t pt-2 flex justify-between font-bold text-base text-[var(--deep-navy)]">
                   <span>Grand Total</span>
-                  <span className="text-[var(--brand-orange)]">
-                    ₹{(subtotal + shippingEstimate).toLocaleString()}
-                  </span>
+                  <span className="text-[var(--brand-orange)]">₹{subtotal.toLocaleString()}</span>
                 </div>
               </div>
             </div>

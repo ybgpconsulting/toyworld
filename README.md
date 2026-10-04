@@ -60,7 +60,22 @@ npm run db:migrate
 npm run db:seed
 ```
 
-### 3. Start Local Development Servers
+### 3. Configure Admin Credentials Securely
+The repo does not ship a production-ready admin password. The first admin login is intentionally blocked until a secure password is configured.
+
+```bash
+curl -X POST http://localhost:8787/api/admin/auth/setup \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"ChooseA_Strong_12Plus_Secret!","email":"admin@toyworld.in","name":"Store Admin"}'
+```
+
+Set production secrets with Cloudflare instead of committing them to source control:
+```bash
+npx wrangler secret put ADMIN_JWT_SECRET
+npx wrangler secret put GOOGLE_SHEETS_WEBHOOK_SECRET
+```
+
+### 4. Start Local Development Servers
 In Terminal 1 (Cloudflare Worker API on port 8787):
 ```bash
 npm run worker:dev
@@ -78,10 +93,10 @@ Open `http://localhost:5173` in your browser. The Vite proxy forwards `/api` req
 ## 🔐 Admin Portal
 
 - **URL:** `http://localhost:5173/admin/login` (or `/admin` in production)
-- **Default Username:** `admin`
-- **Default Password:** `ToyWorld@2024`
+- **Initial Username:** `admin`
+- **Initial Password:** Must be configured on first run via the setup endpoint.
 
-*Note: On first login, the system automatically validates the default credentials, hashes the password via Web Crypto PBKDF2, and saves it to the database.*
+*Note: The default password is not treated as a valid production credential. Password setup is intentionally enforced before login.*
 
 ### Admin Features
 - **Dashboard:** Real-time revenue, new order badges, low stock alerts, and quick actions.

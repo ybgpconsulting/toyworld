@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
 import { Env, Variables } from './types';
 
@@ -33,7 +32,37 @@ import { adminAuth } from './middleware/auth';
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 app.use('*', secureHeaders());
-app.use('*', cors());
+app.use('*', async (c, next) => {
+  const origin = c.req.header('Origin');
+
+  if (!origin) {
+    await next();
+    return;
+  }
+
+  const configuredOrigins = (c.env.CORS_ORIGIN || 'http://localhost:5173,https://localhost:5173')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const allowed = configuredOrigins.some((allowedOrigin) => allowedOrigin === origin || allowedOrigin === '*');
+
+  if (allowed) {
+    c.header('Access-Control-Allow-Origin', origin);
+    c.header('Vary', 'Origin');
+    c.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    c.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Webhook-Secret,Idempotency-Key');
+    c.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    return c.json({ error: 'Origin not allowed' }, 403);
+  }
+
+  if (c.req.method === 'OPTIONS') {
+    return c.newResponse(null, 204);
+  }
+
+  await next();
+});
 
 // Public API
 app.route('/api/products', productRoutes);

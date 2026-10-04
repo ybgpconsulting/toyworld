@@ -7,7 +7,18 @@
  */
 export function generateOrderNumber(): string {
   const d = new Date();
-  const dateStr = d.toISOString().split('T')[0].replace(/-/g, '');
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const dateParts = formatter.formatToParts(d);
+  const year = dateParts.find((part) => part.type === 'year')?.value ?? '0000';
+  const month = dateParts.find((part) => part.type === 'month')?.value ?? '00';
+  const day = dateParts.find((part) => part.type === 'day')?.value ?? '00';
+  const dateStr = `${year}${month}${day}`;
   const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `TW-${dateStr}-${randomStr}`;
 }
@@ -83,10 +94,14 @@ export async function verifyPassword(password: string, stored: string): Promise<
  * Convert text to URL-friendly slug
  */
 export function slugify(text: string): string {
-  return text
+  const normalized = text
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  return normalized
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
@@ -95,14 +110,26 @@ export function slugify(text: string): string {
  * Validate Indian pincode (6 digits, cannot start with 0)
  */
 export function validateIndianPincode(pincode: string): boolean {
-  return /^[1-9][0-9]{5}$/.test(pincode);
+  const normalized = String(pincode ?? '').replace(/\D/g, '');
+  return /^[1-9]\d{5}$/.test(normalized);
 }
 
 /**
  * Validate Indian mobile number (10 digits, starts with 6-9)
+ * Accepts common user-entered formats such as +91, spaces, and dashes.
  */
 export function validateIndianPhone(phone: string): boolean {
-  return /^[6-9]\d{9}$/.test(phone.replace(/\s+/g, ''));
+  const normalized = String(phone ?? '').replace(/\D/g, '');
+
+  if (normalized.length === 10) {
+    return /^[6-9]\d{9}$/.test(normalized);
+  }
+
+  if (normalized.length === 12 && normalized.startsWith('91')) {
+    return /^[6-9]\d{9}$/.test(normalized.slice(2));
+  }
+
+  return false;
 }
 
 /**

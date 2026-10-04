@@ -18,10 +18,11 @@ binding = "R2"
 bucket_name = "toy-world-media"
 
 [vars]
-CORS_ORIGIN = "*"
-ADMIN_JWT_SECRET = "change-this-to-a-strong-secret-in-production"
-
-GOOGLE_SHEETS_WEBHOOK_SECRET = "change-this-sheets-secret"
+# Local development only. Set production values with:
+#   wrangler secret put CORS_ORIGIN
+#   wrangler secret put ADMIN_JWT_SECRET
+#   wrangler secret put GOOGLE_SHEETS_WEBHOOK_SECRET
+CORS_ORIGIN = "http://localhost:5173,https://localhost:5173"
 
 [dev]
 port = 8787
