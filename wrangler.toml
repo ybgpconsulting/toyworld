@@ -1,0 +1,28 @@
+name = "toy-world-worker"
+main = "worker/src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "toy-world-db"
+database_id = "placeholder-replace-after-create"
+migrations_dir = "worker/migrations"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "toy-world-media"
+
+[vars]
+CORS_ORIGIN = "*"
+ADMIN_JWT_SECRET = "change-this-to-a-strong-secret-in-production"
+
+GOOGLE_SHEETS_WEBHOOK_SECRET = "change-this-sheets-secret"
+
+[dev]
+port = 8787
+local_protocol = "http"
