@@ -8,12 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "worker:dev": "wrangler dev --port 8787",
-    "worker:deploy": "wrangler deploy",
-    "db:migrate": "wrangler d1 migrations apply toy-world-db --local",
-    "db:migrate:prod": "wrangler d1 migrations apply toy-world-db --remote",
-    "db:seed": "wrangler d1 execute toy-world-db --local --file=./worker/seed/seed.sql",
-    "db:seed:prod": "wrangler d1 execute toy-world-db --remote --file=./worker/seed/seed.sql"
+    "worker:dev": "npm --prefix worker run dev",
+    "worker:deploy": "npm --prefix worker run deploy",
+    "db:migrate": "npm --prefix worker exec -- wrangler d1 migrations apply toy-world-db --local",
+    "db:migrate:prod": "npm --prefix worker exec -- wrangler d1 migrations apply toy-world-db --remote",
+    "db:seed": "npm --prefix worker exec -- wrangler d1 execute toy-world-db --local --file=./worker/seed/seed.sql",
+    "db:seed:prod": "npm --prefix worker exec -- wrangler d1 execute toy-world-db --remote --file=./worker/seed/seed.sql"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

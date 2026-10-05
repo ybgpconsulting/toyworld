@@ -62,10 +62,10 @@ INSERT OR IGNORE INTO homepage_sections (section_key, title, display_order, is_a
 ('whatsapp_cta', 'WhatsApp Support', 9, 1, '{}');
 
 -- Homepage Banners
-INSERT OR IGNORE INTO homepage_banners (title, subtitle, image_url, cta_text, cta_link, display_order, is_active) VALUES
-('Explore a World of Toys!', 'Discover educational, fun, and creative toys for every age', 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=1200', 'Shop Now', '/shop', 1, 1),
-('Back to School Specials', 'Educational toys and STEM kits starting at ₹299', 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=1200', 'View Offers', '/category/educational-toys', 2, 1),
-('Free Delivery on ₹999+', 'Pan India fast shipping on all orders above ₹999', 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=1200', 'Explore Catalog', '/shop', 3, 1);
+INSERT OR REPLACE INTO homepage_banners (title, subtitle, image_url, cta_text, cta_link, display_order, is_active) VALUES
+('Welcome to India’s Favorite Toy Wonderland!', 'Over 1,000+ BIS safety-certified toys delivered directly to your doorstep with love.', 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=1600&q=80', 'Explore Collection', '/shop', 1, 1),
+('High-Octane RC Stunt Racers & Drones', 'Unstoppable 360° flips, LED wheels, and rechargeable fast-action thrill machines.', 'https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=1600&q=80', 'Shop RC Cars', '/category/remote-control', 2, 1),
+('Ignite Young Minds with STEM Robotics', 'Hands-on science kits, solar-powered inventions, and future-ready coding toys.', 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1600&q=80', 'Discover STEM', '/category/educational-toys', 3, 1);
 
 -- Brands
 INSERT OR IGNORE INTO brands (name, slug, description, display_order, is_active) VALUES
@@ -79,17 +79,17 @@ INSERT OR IGNORE INTO brands (name, slug, description, display_order, is_active)
 ('Play-Doh', 'play-doh', 'Creative modeling compound and fun tools', 8, 1);
 
 -- Categories
-INSERT OR IGNORE INTO categories (name, slug, description, display_order, is_active) VALUES
-('Educational Toys', 'educational-toys', 'Learn while playing with our range of educational and STEM toys', 1, 1),
-('Remote Control', 'remote-control', 'High-speed RC cars, helicopters, stunts, and buggies', 2, 1),
-('Dolls & Playsets', 'dolls-playsets', 'Fashion dolls, accessories, and imaginative dreamhouses', 3, 1),
-('Action Figures', 'action-figures', 'Superheroes, anime, and character action figures', 4, 1),
-('Board Games', 'board-games', 'Classic and modern family board games', 5, 1),
-('Puzzles', 'puzzles', 'Jigsaw puzzles and brain teasers for all age groups', 6, 1),
-('Outdoor & Sports', 'outdoor-sports', 'Active outdoor toys, sports gear, and play sets', 7, 1),
-('Building Blocks', 'building-blocks', 'Interlocking construction bricks and architectural sets', 8, 1),
-('Soft Toys', 'soft-toys', 'Ultra-soft plush teddies and huggable animal friends', 9, 1),
-('Baby Toys', 'baby-toys', 'Safe, non-toxic, and stimulating sensory toys for 0-3 years', 10, 1);
+INSERT OR REPLACE INTO categories (name, slug, description, image_url, display_order, is_active) VALUES
+('Remote Control & Cars', 'remote-control', 'High-speed RC cars, stunt tumblers, drift racers and flying helicopters.', 'https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&w=500&q=80', 1, 1),
+('Building Blocks & LEGO', 'building-blocks', 'Interlocking construction bricks, magnetic tiles and architectural sets.', 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&w=500&q=80', 2, 1),
+('STEM & Science Toys', 'educational-toys', 'Robotics kits, solar projects, chemistry labs, and educational brain boosters.', 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=500&q=80', 3, 1),
+('Plush & Soft Toys', 'soft-toys', 'Giant cuddly teddy bears, baby-safe plushies, and huggable cartoon animals.', 'https://images.unsplash.com/photo-1559454403-b8fb88521f11?auto=format&fit=crop&w=500&q=80', 4, 1),
+('Dolls & Playsets', 'dolls-playsets', 'Fashion dolls, magical princess sets, dream dollhouses, and vanity kits.', 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=500&q=80', 5, 1),
+('Action Figures & Heroes', 'action-figures', 'Superhero legends, anime champions, robotic transformers, and collectables.', 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=500&q=80', 6, 1),
+('Board Games & Puzzles', 'board-games', 'Family strategy board games, wooden puzzles, Monopoly, and memory games.', 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=500&q=80', 7, 1),
+('Art, Craft & Dough', 'art-craft', 'Modeling dough, pottery studio sets, coloring kits, and creative DIY crafts.', 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=500&q=80', 8, 1),
+('Outdoor, Sports & Blasters', 'outdoor-sports', 'Foam blasters, foldable scooters, basketball sets, and active outdoor gear.', 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=500&q=80', 9, 1),
+('Baby & Toddler Sensory', 'baby-toys', 'Non-toxic musical rattles, sensory teething rings, and soft activity gyms.', 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=500&q=80', 10, 1);
 
 -- Subcategories (referencing parent via subqueries)
 INSERT OR IGNORE INTO categories (name, slug, description, parent_id, display_order, is_active) VALUES
@@ -175,7 +175,7 @@ INSERT OR IGNORE INTO products (
   '12-in-1 Educational Solar Robot Creation Kit',
   '12-in-1-educational-solar-robot-creation-kit',
   'STEM-SLR-12',
-  (SELECT id FROM categories WHERE slug = 'educational-toys'),
+  (SELECT id FROM categories WHERE slug = 'stem-science'),
   (SELECT id FROM brands WHERE slug = 'funskool'),
   'Build 12 different working motorized robots powered by direct sunlight',
   'Teach green energy and hands-on robotics engineering! Children can construct an auto-bot, turtle bot, dog bot, boat, and more using gears, solar panels, and connectors without any batteries needed.',

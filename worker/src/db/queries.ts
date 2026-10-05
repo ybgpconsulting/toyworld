@@ -13,46 +13,50 @@ export interface ProductFilters {
   sort?: string;
 }
 
+function buildProductWhere(filters: ProductFilters): { where: string; params: (string | number)[] } {
+  const conditions = ['is_active = 1'];
+  const params: (string | number)[] = [];
+
+  if (filters.category_id) {
+    conditions.push('category_id = ?');
+    params.push(filters.category_id);
+  }
+  if (filters.brand_id) {
+    conditions.push('brand_id = ?');
+    params.push(filters.brand_id);
+  }
+  if (filters.min_price !== undefined) {
+    conditions.push('selling_price >= ?');
+    params.push(filters.min_price);
+  }
+  if (filters.max_price !== undefined) {
+    conditions.push('selling_price <= ?');
+    params.push(filters.max_price);
+  }
+  if (filters.is_featured) conditions.push('is_featured = 1');
+  if (filters.is_bestseller) conditions.push('is_bestseller = 1');
+  if (filters.is_new_arrival) conditions.push('is_new_arrival = 1');
+  if (filters.is_offer) conditions.push('is_offer = 1');
+  if (filters.age_group) {
+    conditions.push('age_group = ?');
+    params.push(filters.age_group);
+  }
+
+  return { where: conditions.join(' AND '), params };
+}
+
 export async function getProducts(
   env: Env,
   filters: ProductFilters,
   pagination: { offset: number; limit: number }
 ) {
-  let query = 'SELECT * FROM products WHERE is_active = 1';
-  const params: (string | number)[] = [];
-
-  if (filters.category_id) {
-    query += ' AND category_id = ?';
-    params.push(filters.category_id);
-  }
-  if (filters.brand_id) {
-    query += ' AND brand_id = ?';
-    params.push(filters.brand_id);
-  }
-  if (filters.min_price !== undefined) {
-    query += ' AND selling_price >= ?';
-    params.push(filters.min_price);
-  }
-  if (filters.max_price !== undefined) {
-    query += ' AND selling_price <= ?';
-    params.push(filters.max_price);
-  }
-  if (filters.is_featured) {
-    query += ' AND is_featured = 1';
-  }
-  if (filters.is_bestseller) {
-    query += ' AND is_bestseller = 1';
-  }
-  if (filters.is_new_arrival) {
-    query += ' AND is_new_arrival = 1';
-  }
-  if (filters.is_offer) {
-    query += ' AND is_offer = 1';
-  }
-  if (filters.age_group) {
-    query += ' AND age_group = ?';
-    params.push(filters.age_group);
-  }
+  const { where, params: filterParams } = buildProductWhere(filters);
+  let query = `SELECT products.*,
+    (SELECT COUNT(*) FROM product_variants WHERE product_id = products.id) AS variant_count,
+    (SELECT COUNT(*) FROM product_variants
+     WHERE product_id = products.id AND is_available = 1 AND stock_quantity > 0) AS available_variant_count
+    FROM products WHERE ${where}`;
+  const params = [...filterParams];
 
   // Sorting
   switch (filters.sort) {
@@ -63,7 +67,10 @@ export async function getProducts(
       query += ' ORDER BY selling_price DESC';
       break;
     case 'rating':
-      query += ' ORDER BY is_bestseller DESC, selling_price DESC';
+      query += ` ORDER BY
+        (SELECT AVG(rating) FROM reviews WHERE product_id = products.id AND is_approved = 1) DESC,
+        (SELECT COUNT(*) FROM reviews WHERE product_id = products.id AND is_approved = 1) DESC,
+        created_at DESC`;
       break;
     default:
       query += ' ORDER BY created_at DESC';
@@ -76,13 +83,25 @@ export async function getProducts(
   return results;
 }
 
+export async function countProducts(env: Env, filters: ProductFilters): Promise<number> {
+  const { where, params } = buildProductWhere(filters);
+  const result = await env.DB.prepare(`SELECT COUNT(*) AS total FROM products WHERE ${where}`)
+    .bind(...params)
+    .first<{ total: number }>();
+  return Number(result?.total || 0);
+}
+
 export async function getProductBySlug(env: Env, slug: string) {
   return env.DB.prepare('SELECT * FROM products WHERE slug = ?').bind(slug).first();
 }
 
 export async function validateCoupon(env: Env, code: string, orderAmount: number): Promise<number | null> {
   const coupon = await env.DB.prepare(
-    'SELECT * FROM coupons WHERE code = ? AND is_active = 1'
+    `SELECT * FROM coupons
+     WHERE code = ? AND is_active = 1
+       AND (start_date IS NULL OR datetime(start_date) <= datetime('now'))
+       AND (end_date IS NULL OR datetime(end_date) >= datetime('now'))
+       AND (usage_limit IS NULL OR used_count < usage_limit)`
   )
     .bind(code.toUpperCase())
     .first<{
@@ -99,10 +118,6 @@ export async function validateCoupon(env: Env, code: string, orderAmount: number
 
   if (!coupon) return null;
 
-  const now = new Date();
-  if (coupon.start_date && new Date(coupon.start_date) > now) return null;
-  if (coupon.end_date && new Date(coupon.end_date) < now) return null;
-  if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) return null;
   if (orderAmount < (coupon.min_order_value || 0)) return null;
 
   let discount = 0;
@@ -154,17 +169,19 @@ export async function createOrderAtomic(
     state: string;
     pincode: string;
     country?: string;
-  }
+  },
+  idempotencyKey: string,
+  whatsappUrl: string,
 ): Promise<number> {
-  // Insert order
-  const orderRes = await env.DB.prepare(`
+  const statements = [
+    env.DB.prepare(`
     INSERT INTO orders (
       order_number, customer_name, customer_phone, customer_alternate_phone,
       customer_email, subtotal, discount_amount, coupon_code, shipping_amount,
-      grand_total, order_status, payment_status, shipping_status, customer_note
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', 'pending', 'not_shipped', ?)
+      grand_total, order_status, payment_status, shipping_status, customer_note, whatsapp_link
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', 'pending', 'not_shipped', ?, ?)
   `)
-    .bind(
+      .bind(
       orderData.order_number,
       orderData.customer_name,
       orderData.customer_phone,
@@ -175,22 +192,17 @@ export async function createOrderAtomic(
       orderData.coupon_code || null,
       orderData.shipping_amount || 0,
       orderData.grand_total,
-      orderData.customer_note || null
-    )
-    .run();
-
-  const orderId = orderRes.meta.last_row_id as number;
-
-  // Insert items and decrease stock
-  for (const item of items) {
-    await env.DB.prepare(`
+      orderData.customer_note || null,
+      whatsappUrl
+      ),
+    ...items.map((item) => env.DB.prepare(`
       INSERT INTO order_items (
         order_id, product_id, product_name, variant_id, variant_name,
         sku, quantity, mrp, selling_price, total_price, image_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) SELECT id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        FROM orders WHERE order_number = ?
     `)
       .bind(
-        orderId,
         item.product_id,
         item.product_name,
         item.variant_id || null,
@@ -200,36 +212,17 @@ export async function createOrderAtomic(
         item.mrp,
         item.selling_price,
         item.total_price,
-        item.image_url || null
-      )
-      .run();
-
-    // Inventory reduction
-    if (item.variant_id) {
-      await env.DB.prepare(
-        'UPDATE product_variants SET stock_quantity = MAX(0, stock_quantity - ?) WHERE id = ?'
-      )
-        .bind(item.quantity, item.variant_id)
-        .run();
-    }
-    if (item.product_id) {
-      await env.DB.prepare(
-        'UPDATE products SET stock_quantity = MAX(0, stock_quantity - ?) WHERE id = ?'
-      )
-        .bind(item.quantity, item.product_id)
-        .run();
-    }
-  }
-
-  // Insert delivery address
-  await env.DB.prepare(`
+        item.image_url || null,
+        orderData.order_number
+      )),
+    env.DB.prepare(`
     INSERT INTO order_addresses (
       order_id, flat_house, building_society, street_locality, landmark,
       city, state, pincode, country
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) SELECT id, ?, ?, ?, ?, ?, ?, ?, ?
+      FROM orders WHERE order_number = ?
   `)
-    .bind(
-      orderId,
+      .bind(
       address.flat_house,
       address.building_society || null,
       address.street_locality,
@@ -237,26 +230,26 @@ export async function createOrderAtomic(
       address.city,
       address.state,
       address.pincode,
-      address.country || 'India'
-    )
-    .run();
-
-  // Insert initial history
-  await env.DB.prepare(`
+      address.country || 'India',
+      orderData.order_number
+      ),
+    env.DB.prepare(`
     INSERT INTO order_status_history (order_id, status_type, old_status, new_status, note)
-    VALUES (?, 'order_status', 'none', 'new', 'Order created by customer')
+    SELECT id, 'order_status', 'none', 'new', 'Order created by customer'
+    FROM orders WHERE order_number = ?
   `)
-    .bind(orderId)
-    .run();
+      .bind(orderData.order_number),
+    env.DB.prepare(`
+    INSERT INTO order_idempotency_keys (idempotency_key, order_id, order_number)
+    SELECT ?, id, order_number FROM orders WHERE order_number = ?
+  `)
+      .bind(idempotencyKey, orderData.order_number),
+  ];
 
-  // If coupon used, increment count
-  if (orderData.coupon_code) {
-    await env.DB.prepare(
-      'UPDATE coupons SET used_count = used_count + 1 WHERE code = ?'
-    )
-      .bind(orderData.coupon_code.toUpperCase())
-      .run();
+  const results = await env.DB.batch(statements);
+  const orderId = Number(results[0]?.meta.last_row_id);
+  if (!Number.isSafeInteger(orderId) || orderId <= 0) {
+    throw new Error('Order batch completed without returning an order ID.');
   }
-
   return orderId;
 }

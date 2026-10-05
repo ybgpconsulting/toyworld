@@ -17,9 +17,10 @@ const Shipping: React.FC = () => {
   const { showToast } = useToast();
 
   // Form State
-  const [ruleType, setRuleType] = useState<'flat_rate' | 'free_threshold' | 'state'>('state');
+  const [ruleType, setRuleType] = useState<'flat_rate' | 'free_threshold' | 'state' | 'pincode'>('state');
   const [name, setName] = useState('');
   const [stateName, setStateName] = useState('');
+  const [pincodePrefix, setPincodePrefix] = useState('');
   const [shippingAmount, setShippingAmount] = useState<number>(79);
   const [minOrderValue, setMinOrderValue] = useState<number>(0);
 
@@ -45,13 +46,18 @@ const Shipping: React.FC = () => {
       setSaving(true);
       await adminCreateShippingRule({
         rule_type: ruleType,
-        name: name || (ruleType === 'state' ? `${stateName} Delivery` : 'Shipping Rule'),
+        name: name || (ruleType === 'state'
+          ? `${stateName} Delivery`
+          : ruleType === 'pincode'
+            ? `${pincodePrefix} Pincode Delivery`
+            : 'Shipping Rule'),
         state_name: ruleType === 'state' ? stateName : null,
+        pincode_prefix: ruleType === 'pincode' ? pincodePrefix : null,
         shipping_amount: ruleType === 'free_threshold' ? 0 : Number(shippingAmount),
         min_order_value: Number(minOrderValue),
         is_free: ruleType === 'free_threshold',
         is_active: true,
-        priority: ruleType === 'free_threshold' ? 100 : ruleType === 'state' ? 10 : 1,
+        priority: ruleType === 'pincode' ? 20 : ruleType === 'free_threshold' ? 100 : ruleType === 'state' ? 10 : 1,
       });
 
       showToast('Shipping rule created successfully', 'success');
@@ -123,7 +129,7 @@ const Shipping: React.FC = () => {
                       {rule.rule_type?.replace(/_/g, ' ')}
                     </td>
                     <td className="p-4 text-gray-700">
-                      {rule.state_name || 'All India'}
+                      {rule.state_name || (rule.pincode_prefix ? `PIN ${rule.pincode_prefix}*` : 'All India')}
                     </td>
                     <td className="p-4 font-bold text-[var(--deep-navy)]">
                       {rule.is_free || rule.shipping_amount === 0 ? (
@@ -159,10 +165,11 @@ const Shipping: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Rule Type</label>
             <select
               value={ruleType}
-              onChange={(e) => setRuleType(e.target.value as any)}
+              onChange={(e) => setRuleType(e.target.value as 'state' | 'pincode' | 'free_threshold' | 'flat_rate')}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--brand-orange)] outline-none text-sm"
             >
               <option value="state">State-wise Shipping</option>
+              <option value="pincode">Pincode-prefix Shipping</option>
               <option value="free_threshold">Free Delivery Threshold</option>
               <option value="flat_rate">All-India Flat Rate</option>
             </select>
@@ -193,6 +200,18 @@ const Shipping: React.FC = () => {
                 ))}
               </select>
             </div>
+          )}
+
+          {ruleType === 'pincode' && (
+            <Input
+              label="Pincode Prefix *"
+              value={pincodePrefix}
+              onChange={(event) => setPincodePrefix(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="e.g. 125 or 125001"
+              maxLength={6}
+              inputMode="numeric"
+              required
+            />
           )}
 
           {ruleType !== 'free_threshold' && (

@@ -11,12 +11,16 @@ export interface ProductVariant {
   productId?: string | number;
   product_id?: number;
   name: string;
+  variant_type?: string;
+  variant_value?: string;
   sku?: string;
   price?: number;
   mrp?: number;
   selling_price?: number;
   stock?: number;
   stock_quantity?: number;
+  image_url?: string;
+  is_available?: boolean | number;
   attributes?: Record<string, string>;
 }
 
@@ -43,6 +47,8 @@ export interface Product {
   low_stock_threshold?: number;
   images: ProductImage[];
   variants?: ProductVariant[];
+  variant_count?: number;
+  available_variant_count?: number;
   status?: string;
   is_active?: boolean | number;
   is_featured?: boolean | number;
@@ -209,6 +215,8 @@ export interface HomepageBanner {
   cta_text?: string;
   active?: boolean;
   is_active?: boolean;
+  display_order?: number;
+  displayOrder?: number;
 }
 
 export interface HomepageSection {
@@ -229,6 +237,7 @@ export interface ShippingRule {
   rule_type?: string;
   type?: string;
   state_name?: string;
+  pincode_prefix?: string;
   rate?: number;
   shipping_amount?: number;
   is_free?: boolean | number;

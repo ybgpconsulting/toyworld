@@ -1,17 +1,19 @@
 import { Hono } from 'hono';
 import { Env } from '../types';
-import { getProducts, getProductBySlug } from '../db/queries';
+import { countProducts, getProducts, getProductBySlug, ProductFilters } from '../db/queries';
 
 const app = new Hono<{ Bindings: Env }>();
 
 app.get('/', async (c) => {
-  const page = Number(c.req.query('page') || 1);
-  const limit = Number(c.req.query('limit') || 20);
+  const page = Math.max(1, Math.floor(Number(c.req.query('page') || 1)));
+  const limit = Math.min(100, Math.max(1, Math.floor(Number(c.req.query('limit') || 20))));
   const offset = (page - 1) * limit;
-  
-  const filters: any = {};
+
+  const filters: ProductFilters = {};
   if (c.req.query('category_slug')) {
-    const cat = await c.env.DB.prepare('SELECT id FROM categories WHERE slug = ?').bind(c.req.query('category_slug')).first();
+    const cat = await c.env.DB.prepare('SELECT id FROM categories WHERE slug = ?')
+      .bind(c.req.query('category_slug'))
+      .first<{ id: number }>();
     if (cat) filters.category_id = cat.id;
   }
   if (c.req.query('brand_id')) filters.brand_id = Number(c.req.query('brand_id'));
@@ -21,9 +23,14 @@ app.get('/', async (c) => {
   if (c.req.query('is_bestseller')) filters.is_bestseller = true;
   if (c.req.query('is_new_arrival')) filters.is_new_arrival = true;
   if (c.req.query('is_offer')) filters.is_offer = true;
+  const sort = c.req.query('sort');
+  if (sort === 'price_asc' || sort === 'price_desc' || sort === 'rating') filters.sort = sort;
 
-  const results = await getProducts(c.env, filters, { limit, offset });
-  return c.json({ data: results, page, limit });
+  const [results, total] = await Promise.all([
+    getProducts(c.env, filters, { limit, offset }),
+    countProducts(c.env, filters),
+  ]);
+  return c.json({ data: results, total, page, limit, totalPages: Math.ceil(total / limit) });
 });
 
 app.get('/featured', async (c) => {
@@ -50,10 +57,10 @@ app.get('/:slug', async (c) => {
   const slug = c.req.param('slug');
   const product = await getProductBySlug(c.env, slug);
   if (!product) return c.json({ error: 'Product not found' }, 404);
-  
+
   const { results: variants } = await c.env.DB.prepare('SELECT * FROM product_variants WHERE product_id = ?').bind(product.id).all();
   const { results: images } = await c.env.DB.prepare('SELECT * FROM product_images WHERE product_id = ?').bind(product.id).all();
-  
+
   return c.json({ ...product, variants, images });
 });
 

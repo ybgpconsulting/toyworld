@@ -42,6 +42,13 @@ app.get('/', async (c) => {
     .first<{ total: number }>();
 
   // Add order and pagination
+  query = query.replace(
+    'SELECT *',
+    `SELECT products.*,
+      (SELECT COUNT(*) FROM product_variants WHERE product_id = products.id) AS variant_count,
+      (SELECT COUNT(*) FROM product_variants
+       WHERE product_id = products.id AND is_available = 1 AND stock_quantity > 0) AS available_variant_count`
+  );
   query += ' ORDER BY is_bestseller DESC, created_at DESC LIMIT ? OFFSET ?';
   params.push(limit, offset);
 

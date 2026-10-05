@@ -13,6 +13,9 @@ app.get('/', async (c) => {
 app.post('/', async (c) => {
   try {
     const body = await c.req.json();
+    if (body.rule_type === 'pincode' && !/^\d{1,6}$/.test(String(body.pincode_prefix || ''))) {
+      return c.json({ error: 'Pincode-prefix rules require 1 to 6 digits.' }, 400);
+    }
     const res = await c.env.DB.prepare(`
       INSERT INTO shipping_rules (rule_type, name, state_name, pincode_prefix, min_order_value, shipping_amount, is_free, is_active, priority)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)

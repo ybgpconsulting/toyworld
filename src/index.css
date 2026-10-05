@@ -54,8 +54,62 @@
   .safe-pb {
     padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
   }
-  
+
   .safe-pt {
     padding-top: calc(env(safe-area-inset-top) + 1rem);
   }
+
+  /* Playful Toy Background Pattern with Blocks, Stars, Rockets, and Bears */
+  .bg-toy-pattern {
+    background-color: var(--warm-white);
+    background-image: radial-gradient(#FF6B2B 0.75px, transparent 0.75px), radial-gradient(#FFD700 0.75px, #FFF8F0 0.75px);
+    background-size: 30px 30px;
+    background-position: 0 0, 15px 15px;
+  }
+
+  .bg-toy-doodles {
+    background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23FF6B2B' fill-opacity='0.035'%3E%3Cpath d='M20 20h12v12H20zM70 15l4 8h8l-6 5 2 8-8-5-8 5 2-8-6-5h8zM15 75c0-5.5 4.5-10 10-10s10 4.5 10 10-4.5 10-10 10-10-4.5-10-10zM80 80l12-10 12 10-5 14h-14zM45 45c0-4 3-8 8-8s8 4 8 8c0 3-2 6-4 7l2 6h-12l2-6c-2-1-4-4-4-7z'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .bg-toy-doodles-dark {
+    background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23FFFFFF' fill-opacity='0.05'%3E%3Cpath d='M20 20h12v12H20zM70 15l4 8h8l-6 5 2 8-8-5-8 5 2-8-6-5h8zM15 75c0-5.5 4.5-10 10-10s10 4.5 10 10-4.5 10-10 10-10-4.5-10-10zM80 80l12-10 12 10-5 14h-14zM45 45c0-4 3-8 8-8s8 4 8 8c0 3-2 6-4 7l2 6h-12l2-6c-2-1-4-4-4-7z'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-dark {
+    background: rgba(26, 26, 46, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(8px) rotate(-2deg);
+  }
+}
+
+.animate-float {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-reverse 5s ease-in-out infinite 1s;
 }

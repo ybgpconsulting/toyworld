@@ -60,6 +60,8 @@ npm run db:migrate
 npm run db:seed
 ```
 
+Checkout quotes and order totals are calculated by the Worker from current D1 prices, stock, coupons, and shipping rules. Shipping resolution is deterministic: matching pincode prefix (longest prefix, then configured priority), matching state rule, qualifying free-shipping threshold, then flat/default rate. Order writes use a D1 batch; database triggers conditionally deduct stock, reserve coupon usage, log inventory changes, and restore stock once on cancellation. Apply all migrations before running local ordering flows.
+
 ### 3. Configure Admin Credentials Securely
 The repo does not ship a production-ready admin password. The first admin login is intentionally blocked until a secure password is configured.
 
